@@ -4,46 +4,55 @@
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard</title>
+    <title>Workspace Dashboard</title>
 </head>
 <body>
     <div id="app-root"></div>
-
     <script>
-        // 1. Fetch the raw text of your hidden file
-        fetch('config.data')
-            .then(response => {
-                if (!response.ok) throw new Error('Network response was not ok');
-                return response.text();
-            })
-            .then(rawData => {
-                // 2. Parse the text directly into the DOM as HTML elements
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(rawData, 'text/html');
-                
-                // 3. Move the head elements (styles, meta tags) over
-                Array.from(doc.head.childNodes).forEach(node => {
-                    document.head.appendChild(node.cloneNode(true));
-                });
-                
-                // 4. Inject the body elements (your call UI window layouts)
-                document.getElementById('app-root').innerHTML = doc.body.innerHTML;
-                
-                // 5. Extract and manually execute any inline <script> tags inside your .data file
-                const scripts = doc.querySelectorAll('script');
-                scripts.forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    if (oldScript.src) {
-                        newScript.src = oldScript.src;
-                    } else {
-                        newScript.textContent = oldScript.textContent;
-                    }
-                    document.body.appendChild(newScript);
-                });
-            })
-            .catch(error => {
-                console.error('Error rendering application workspace:', error);
-            });
+        async function loadTextFile(url) {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Failed to load: ${url}`);
+            return await response.text();
+        }
+        async function bootApplication() {
+            try {
+                const htmlContent = await loadTextFile('config.data');
+                document.getElementById('app-root').innerHTML = htmlContent;
+                const cssContent = await loadTextFile('styles.db');
+                const styleElement = document.createElement('style');
+                styleElement.textContent = cssContent;
+                document.head.appendChild(styleElement);
+                const jsFiles = [
+                    "js/config.db", 
+                    "js/utils.db", 
+                    "js/backup-engine.db",
+                    "js/state.db",
+                    "js/core.db",
+                    "js/features/mood.db",
+                    "js/features/envelope.db",
+                    "js/features/reply-library.db",
+                    "js/features/theme-editor.db",
+                    "js/features/group-chat.db",
+                    "js/features/call.db",
+                    "js/games.db",
+                    "js/features.db",
+                    "js/data.db",
+                    "js/onboarding.db",
+                    "js/listeners.db",
+                    "js/app.db"
+                ];
+                for (const file of jsFiles) {
+                    const jsContent = await loadTextFile(file);
+                    const scriptElement = document.createElement('script');
+                    scriptElement.textContent = jsContent;
+                    document.body.appendChild(scriptElement);
+                    console.log(`Successfully executed: ${file}`);
+                }
+            } catch (error) {
+                console.error("Application boot sequence failed:", error);
+            }
+        }
+        bootApplication();
     </script>
 </body>
 </html>
