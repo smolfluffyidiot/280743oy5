@@ -6,6 +6,8 @@
     const KEY_SIZE     = 'callWindowSize';
     const KEY_PILL_POS = 'callPillPos';
     const BG_LF_KEY    = 'callBgImageData';
+    const KEY_ACTIVE_CALL = 'callFeatureActiveCall';
+    const KEY_CALL_START_TIME = 'callFeatureStartTime';
 
     const S = {
         enabled:         localStorage.getItem(KEY_ENABLED) !== 'false',
@@ -41,7 +43,7 @@
     }
 
     const SVG_HU = `<svg viewBox="0 0 24 24" fill="none" style="display:block;width:100%;height:100%;">
-  <path d="M6.6 10.8c1.4 2.8 3.7 5.1 6.5 6.5l2.2-2.2c.28-.27.68-.36 1.03-.24 1.1.37 2.3.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.56 21 3 13.44 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.28.2 2.5.57 3.57.11.35.03.74-.24 1.02L6.6 10.8z" fill="white"/>
+  <path d="M6.6 10.8c1.4 2.8 3.7 5.1 6.5 6.5l2.2-2.2c.28-.27.68-.36 1.03-.24 1.1.37 2.3.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.56 21 3 13.44 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.28.2 2.52.57 3.69.1.36.01.76-.24 1.03l-2.2 2.2z" fill="white"/>
   <line x1="21" y1="3" x2="3" y2="21" stroke="white" stroke-width="2.4" stroke-linecap="round"/>
 </svg>`;
 
@@ -116,6 +118,10 @@
     max-width:90vw;max-height:90vh;
 }
 #call-window.visible{display:flex;animation:cWi .4s cubic-bezier(.22,1,.36,1);}
+
+#call-window.hidden-until-chat-ready{
+    display: none !important;
+}
 
 #call-window-inner{
     border-radius:22px;overflow:hidden;
@@ -322,6 +328,11 @@
 }
 #call-mini-pill:active{cursor:grabbing;}
 #call-mini-pill.visible{display:flex;animation:cPi .3s cubic-bezier(.22,1,.36,1);}
+
+#call-mini-pill.hidden-until-chat-ready{
+    display: none !important;
+}
+
 .call-mini-av{
     width:30px;height:30px;border-radius:50%;
     background:var(--accent-color,#e0698a);overflow:hidden;
@@ -393,7 +404,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
       <button class="call-inc-btn call-inc-accept" id="call-inc-accept">
         <div class="call-inc-circle">
           <svg viewBox="0 0 24 24" fill="none" style="display:block;width:100%;height:100%;">
-            <path d="M6.6 10.8c1.4 2.8 3.7 5.1 6.5 6.5l2.2-2.2c.28-.27.68-.36 1.03-.24 1.1.37 2.3.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.56 21 3 13.44 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.28.2 2.5.57 3.57.11.35.03.74-.24 1.02L6.6 10.8z" fill="white"/>
+            <path d="M6.6 10.8c1.4 2.8 3.7 5.1 6.5 6.5l2.2-2.2c.28-.27.68-.36 1.03-.24 1.1.37 2.3.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1C10.56 21 3 13.44 3 4c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.28.2 2.52.57 3.69.1.36.01.76-.24 1.03l-2.2 2.2z" fill="white"/>
           </svg>
         </div>
         <span class="call-inc-lbl">接听</span>
@@ -402,7 +413,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
   </div>
 </div>
 
-<div id="call-window">
+<div id="call-window" class="hidden-until-chat-ready">
   <div id="call-window-inner">
     <div id="call-window-bg">
       <div class="call-bg-grad"></div>
@@ -465,7 +476,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
   <button class="call-size-btn" data-w="360" data-h="560"><i class="fas fa-expand"></i>大</button>
 </div>
 
-<div id="call-mini-pill">
+<div id="call-mini-pill" class="hidden-until-chat-ready">
   <div class="call-mini-av" id="call-mini-av"><i class="fas fa-user" id="call-mini-av-icon"></i></div>
   <div class="call-mini-info">
     <div class="call-mini-name" id="call-mini-name">通话中</div>
@@ -582,6 +593,10 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         S.minimized = false; S.isPartnerCall = !!isPartner; S.immersive = false;
         document.getElementById('call-window')?.classList.remove('immersive');
 
+        // Persist call state to localStorage
+        localStorage.setItem(KEY_ACTIVE_CALL, 'true');
+        localStorage.setItem(KEY_CALL_START_TIME, Date.now().toString());
+
         ['call-inc-avatar','call-conn-avatar','call-win-avatar','call-mini-av'].forEach(fillAv);
         ['call-conn-name','call-win-name','call-mini-name'].forEach(fillNm);
         applyBg(); positionWindow();
@@ -603,6 +618,8 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                 if (!S.active) return;
                 S.active = false;
                 cancelAnimationFrame(S.timerRAF);
+                localStorage.removeItem(KEY_ACTIVE_CALL);
+                localStorage.removeItem(KEY_CALL_START_TIME);
                 const winEl = document.getElementById('call-window');
                 if (winEl) { winEl.classList.remove('visible'); winEl.classList.remove('immersive'); }
                 const connEl = document.getElementById('call-connecting-state');
@@ -624,6 +641,7 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
             S.connectingTimer = setTimeout(() => {
                 if (!S.active) return;
                 S.startTime = Date.now();
+                localStorage.setItem(KEY_CALL_START_TIME, S.startTime.toString());
                 if (conn) conn.classList.remove('visible');
                 if (body) body.style.display = '';
                 tick();
@@ -637,6 +655,10 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         S.active = false; S.startTime = null;
         cancelAnimationFrame(S.timerRAF);
         clearTimeout(S.connectingTimer); clearTimeout(S.incomingTimer);
+
+        // Clear persistent call state
+        localStorage.removeItem(KEY_ACTIVE_CALL);
+        localStorage.removeItem(KEY_CALL_START_TIME);
 
         ['call-window','call-mini-pill','call-incoming-overlay'].forEach(id => {
             const e = document.getElementById(id);
@@ -892,7 +914,41 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         initDrag(); initPillDrag(); initResize();
     }
 
-    window.callFeature = { startCall, endCall, showIncomingCall, restoreWindow, minimizeWindow };
+    function restoreCallState() {
+        const wasActive = localStorage.getItem(KEY_ACTIVE_CALL) === 'true';
+        const startTime = localStorage.getItem(KEY_CALL_START_TIME);
+        
+        if (wasActive && startTime) {
+            S.active = true;
+            S.startTime = parseInt(startTime, 10);
+            S.elapsed = Date.now() - S.startTime;
+            
+            // Show the call window
+            const win = document.getElementById('call-window');
+            if (win && !win.classList.contains('hidden-until-chat-ready')) {
+                win.classList.add('visible');
+            }
+            
+            // Show the pill if minimized
+            const pill = document.getElementById('call-mini-pill');
+            if (S.minimized && pill && !pill.classList.contains('hidden-until-chat-ready')) {
+                pill.classList.add('visible');
+            }
+            
+            // Start the timer
+            tick();
+        }
+    }
+
+    function enableCallUIAfterWelcome() {
+        const callWindow = document.getElementById('call-window');
+        const callPill = document.getElementById('call-mini-pill');
+        
+        if (callWindow) callWindow.classList.remove('hidden-until-chat-ready');
+        if (callPill) callPill.classList.remove('hidden-until-chat-ready');
+    }
+
+    window.callFeature = { startCall, endCall, showIncomingCall, restoreWindow, minimizeWindow, enableCallUIAfterWelcome };
 
     function init() {
         injectCSS();
@@ -920,6 +976,9 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
                     }
                 }).observe(chatModal, { attributes: true, attributeFilter: ['style'] });
             }
+
+            // Restore call state if there was an active call
+            restoreCallState();
         };
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(late, 800));
         else setTimeout(late, 800);
