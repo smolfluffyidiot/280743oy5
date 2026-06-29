@@ -4,13 +4,46 @@
     <meta charset="UTF-8">
     <meta name="robots" content="noindex, nofollow">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Workspace</title>
-    <style>
-        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; }
-        iframe { border: none; width: 100%; height: 100%; }
-    </style>
+    <title>Dashboard</title>
 </head>
 <body>
-    <iframe src="config.data"></iframe>
+    <div id="app-root"></div>
+
+    <script>
+        // 1. Fetch the raw text of your hidden file
+        fetch('config.data')
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.text();
+            })
+            .then(rawData => {
+                // 2. Parse the text directly into the DOM as HTML elements
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(rawData, 'text/html');
+                
+                // 3. Move the head elements (styles, meta tags) over
+                Array.from(doc.head.childNodes).forEach(node => {
+                    document.head.appendChild(node.cloneNode(true));
+                });
+                
+                // 4. Inject the body elements (your call UI window layouts)
+                document.getElementById('app-root').innerHTML = doc.body.innerHTML;
+                
+                // 5. Extract and manually execute any inline <script> tags inside your .data file
+                const scripts = doc.querySelectorAll('script');
+                scripts.forEach(oldScript => {
+                    const newScript = document.createElement('script');
+                    if (oldScript.src) {
+                        newScript.src = oldScript.src;
+                    } else {
+                        newScript.textContent = oldScript.textContent;
+                    }
+                    document.body.appendChild(newScript);
+                });
+            })
+            .catch(error => {
+                console.error('Error rendering application workspace:', error);
+            });
+    </script>
 </body>
 </html>
